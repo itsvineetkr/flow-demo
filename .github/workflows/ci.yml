@@ -1,0 +1,92 @@
+name: CI
+'on':
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Install
+      run: pip install -r backend/requirements.txt && pip install pytest ruff && npm
+        ci --prefix frontend
+  lint:
+    runs-on: ubuntu-latest
+    needs:
+    - ci
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Install
+      run: pip install -r backend/requirements.txt && pip install pytest ruff && npm
+        ci --prefix frontend
+    - name: Lint
+      run: ruff check backend && npm run lint --prefix frontend --if-present
+  test:
+    runs-on: ubuntu-latest
+    needs:
+    - ci
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Install
+      run: pip install -r backend/requirements.txt && pip install pytest ruff && npm
+        ci --prefix frontend
+    - name: Test
+      run: cd backend && python -m pytest
+  build:
+    runs-on: ubuntu-latest
+    needs:
+    - ci
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Install
+      run: pip install -r backend/requirements.txt && pip install pytest ruff && npm
+        ci --prefix frontend
+    - name: Build
+      run: npm test --prefix frontend --if-present && npm run build --prefix frontend
+  docker_build:
+    runs-on: ubuntu-latest
+    needs:
+    - build
+    - lint
+    - test
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Install
+      run: pip install -r backend/requirements.txt && pip install pytest ruff && npm
+        ci --prefix frontend
+    - name: Docker build
+      run: docker build -t app:${{ github.sha }} .
